@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% block title %}Profile Update Requests – PensionGov Admin{% endblock %}
+{% block breadcrumb %}Profile Update Requests{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h2 class="page-title">Profile Update Requests</h2>
+    <p class="page-subtitle">Review and action pensioner-submitted profile changes</p>
+  </div>
+  {% if pending_count > 0 %}
+  <div class="pending-count-pill">
+    <i class="bi bi-hourglass-split"></i>
+    {{ pending_count }} Pending Review
+  </div>
+  {% endif %}
+</div>
+
+<!-- Summary strip -->
+<div class="pur-summary-strip">
+  <div class="pur-stat">
+    <div class="pur-stat-icon" style="background:#fef3c7;color:#b45309;"><i class="bi bi-hourglass-split"></i></div>
+    <div>
+      <div class="pur-stat-val">{{ requests|selectattr('status','equalto','Pending Review')|list|length }}</div>
+      <div class="pur-stat-label">Pending</div>
+    </div>
+  </div>
+  <div class="pur-stat">
+    <div class="pur-stat-icon" style="background:#d1fae5;color:#065f46;"><i class="bi bi-check-circle-fill"></i></div>
+    <div>
+      <div class="pur-stat-val">{{ requests|selectattr('status','equalto','Approved')|list|length }}</div>
+      <div class="pur-stat-label">Approved</div>
+    </div>
+  </div>
+  <div class="pur-stat">
+    <div class="pur-stat-icon" style="background:#fee2e2;color:#991b1b;"><i class="bi bi-x-circle-fill"></i></div>
+    <div>
+      <div class="pur-stat-val">{{ requests|selectattr('status','equalto','Rejected')|list|length }}</div>
+      <div class="pur-stat-label">Rejected</div>
+    </div>
+  </div>
+  <div class="pur-stat">
+    <div class="pur-stat-icon" style="background:#eff6ff;color:#1d4ed8;"><i class="bi bi-list-ul"></i></div>
+    <div>
+      <div class="pur-stat-val">{{ requests|length }}</div>
+      <div class="pur-stat-label">Total</div>
+    </div>
+  </div>
+</div>
+
+{% if requests %}
+<div class="table-container">
+  <table class="gov-table gov-table-full">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Pensioner</th>
+        <th>Field Changed</th>
+        <th>Old Value</th>
+        <th>Requested Value</th>
+        <th>Submitted</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for req in requests %}
+      <tr class="{% if req['status']=='Pending Review' %}pur-row-pending{% endif %}">
+        <td class="text-muted small">{{ loop.index }}</td>
+
+        <td>
+          <div class="td-name">{{ req['pensioner_name'] }}</div>
+          <div class="td-sub">{{ req['pensioner_pid'] or 'ID pending' }}</div>
+        </td>
+
+        <td>
+          <span class="pur-field-badge">
+            {% set field = req['field_name'] %}
+            {% if field == 'phone' %}<i class="bi bi-telephone-fill"></i>
+            {% elif field == 'email' %}<i class="bi bi-envelope-fill"></i>
+            {% elif field == 'bank_name' %}<i class="bi bi-bank2"></i>
+            {% elif field == 'account_number' %}<i class="bi bi-credit-card-fill"></i>
+            {% elif field == 'ifsc_code' %}<i class="bi bi-hash"></i>
+            {% elif field == 'branch' %}<i class="bi bi-geo-alt-fill"></i>
+            {% elif field == 'password' %}<i class="bi bi-key-fill"></i>
+            {% else %}<i class="bi bi-pencil-fill"></i>
+            {% endif %}
+            {{ req['field_name'].replace('_',' ').title() }}
+          </span>
+        </td>
+
+        <td>
+          <div class="pur-value pur-old-val">
+            {% if req['field_name'] == 'password' %}
+              <span class="text-muted fst-italic">[current password]</span>
+            {% elif req['old_value'] %}
+              {{ req['old_value'] }}
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </div>
+        </td>
+
+        <td>
+          <div class="pur-value pur-new-val">
+            {% if req['field_name'] == 'password' %}
+              <span class="text-muted fst-italic">[new password (hashed)]</span>
+            {% else %}
+              <strong>{{ req['new_value'] }}</strong>
+            {% endif %}
+          </div>
+        </td>
+
+        <td>
+          <span class="date-badge">{{ req['created_at'][:16] }}</span>
+        </td>
+
+        <td>
+          {% if req['status'] == 'Pending Review' %}
+            <span class="status-badge status-pending">
+              <i class="bi bi-hourglass-split"></i> Pending Review
+            </span>
+          {% elif req['status'] == 'Approved' %}
+            <span class="status-badge status-approved">
+              <i class="bi bi-check-circle-fill"></i> Approved
+            </span>
+          {% else %}
+            <span class="status-badge status-rejected">
+              <i class="bi bi-x-circle-fill"></i> Rejected
+            </span>
+          {% endif %}
+        </td>
+
+        <td>
+          {% if req['status'] == 'Pending Review' %}
+          <div class="action-btns">
+            <form method="POST"
+                  action="{{ url_for('approve_profile_request', req_id=req['id']) }}"
+                  onsubmit="return confirm('Approve this change for {{ req['pensioner_name'] }}?')">
+              <button type="submit" class="pur-btn-approve">
+                <i class="bi bi-check-lg"></i> Approve
+              </button>
+            </form>
+            <form method="POST"
+                  action="{{ url_for('reject_profile_request', req_id=req['id']) }}"
+                  onsubmit="return confirm('Reject this change request?')">
+              <button type="submit" class="pur-btn-reject">
+                <i class="bi bi-x-lg"></i> Reject
+              </button>
+            </form>
+          </div>
+          {% else %}
+            <span class="text-muted small">Actioned</span>
+          {% endif %}
+        </td>
+
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% else %}
+<div class="empty-state large-empty">
+  <i class="bi bi-person-check"></i>
+  <p>No profile update requests yet</p>
+  <p class="small text-muted">When pensioners submit changes to their profile, they will appear here for review.</p>
+</div>
+{% endif %}
+
+{% endblock %}

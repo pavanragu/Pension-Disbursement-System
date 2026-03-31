@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}My Pension – PensionGov{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet"/>
+</head>
+<body class="pensioner-body">
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div id="flash-container">
+      {% for cat, msg in messages %}
+      <div class="flash-toast flash-{{ cat }}">
+        <i class="bi bi-{% if cat=='success' %}check-circle{% elif cat=='danger' %}x-circle{% elif cat=='warning' %}exclamation-triangle{% else %}info-circle{% endif %}"></i>
+        {{ msg }}
+      </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<!-- Pensioner Sidebar -->
+<div class="sidebar pensioner-sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon pensioner-brand-icon"><i class="bi bi-person-check-fill"></i></div>
+    <div class="brand-text">
+      <span class="brand-title">My Pension</span>
+      <span class="brand-sub">Citizen Portal</span>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">MY ACCOUNT</div>
+    <a href="{{ url_for('pensioner_dashboard') }}" class="nav-item {% if request.endpoint=='pensioner_dashboard' %}active{% endif %}">
+      <i class="bi bi-house-fill"></i><span>Dashboard</span></a>
+    <a href="{{ url_for('pensioner_profile') }}" class="nav-item {% if request.endpoint=='pensioner_profile' %}active{% endif %}">
+      <i class="bi bi-person-circle"></i><span>My Profile</span></a>
+    <a href="{{ url_for('pensioner_edit_profile') }}" class="nav-item {% if request.endpoint=='pensioner_edit_profile' %}active{% endif %}">
+      <i class="bi bi-pencil-square"></i><span>Edit Profile</span></a>
+    <a href="{{ url_for('pensioner_payments') }}" class="nav-item {% if request.endpoint=='pensioner_payments' %}active{% endif %}">
+      <i class="bi bi-wallet2"></i><span>Payment History</span></a>
+    <a href="{{ url_for('pensioner_notifications') }}" class="nav-item {% if request.endpoint=='pensioner_notifications' %}active{% endif %}">
+      <i class="bi bi-bell-fill"></i><span>Notifications</span>
+      <span class="nav-badge" id="notif-badge-sidebar"></span></a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="admin-avatar pensioner-avatar"><i class="bi bi-person-fill"></i></div>
+    <div class="flex-grow-1">
+      <div class="admin-name">{{ session.pensioner_name }}</div>
+      <div class="admin-role">{{ session.pension_id or 'Pending ID' }}</div>
+    </div>
+    <a href="{{ url_for('pensioner_logout') }}" class="logout-btn" title="Logout">
+      <i class="bi bi-box-arrow-right"></i></a>
+  </div>
+</div>
+
+<!-- Main Content -->
+<div class="main-content" id="main-content">
+  <div class="topbar pensioner-topbar">
+    <div class="topbar-left">
+      <button class="sidebar-toggle" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
+      <div class="page-breadcrumb">
+        <span class="breadcrumb-gov">PensionGov Citizen Portal</span>
+        <span class="breadcrumb-sep">/</span>
+        <span class="breadcrumb-current">{% block breadcrumb %}Dashboard{% endblock %}</span>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-date"><i class="bi bi-calendar3"></i><span id="current-date"></span></div>
+      <a href="{{ url_for('pensioner_notifications') }}" class="notif-btn">
+        <i class="bi bi-bell"></i>
+        <span class="notif-count" id="notif-count" style="display:none">0</span>
+      </a>
+      <a href="{{ url_for('index') }}" class="topbar-portal-link" title="Portal Home">
+        <i class="bi bi-grid-3x3-gap-fill"></i></a>
+      <a href="{{ url_for('pensioner_logout') }}" class="topbar-logout">
+        <i class="bi bi-box-arrow-right"></i> Logout</a>
+    </div>
+  </div>
+  <div class="page-content">{% block content %}{% endblock %}</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

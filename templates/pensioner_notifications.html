@@ -1,0 +1,51 @@
+{% extends "pensioner_base.html" %}
+{% block title %}Notifications – PensionGov{% endblock %}
+{% block breadcrumb %}Notifications{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-title">My Notifications</h2>
+    <p class="page-subtitle">Updates on your pension application and payments</p>
+  </div>
+</div>
+
+<div class="notif-list">
+  {% if notifications %}
+  {% for n in notifications %}
+  <div class="notif-card pensioner-notif-card {% if not n['is_read'] %}notif-unread{% endif %}">
+    <div class="notif-icon-wrap notif-pensioner-icon">
+      {% if 'payment' in n['title']|lower or 'credit' in n['title']|lower %}
+      <i class="bi bi-currency-rupee"></i>
+      {% elif 'approved' in n['title']|lower %}
+      <i class="bi bi-check-circle-fill"></i>
+      {% elif 'reject' in n['title']|lower %}
+      <i class="bi bi-x-circle-fill"></i>
+      {% elif 'verif' in n['title']|lower %}
+      <i class="bi bi-hourglass-split"></i>
+      {% elif 'portal' in n['title']|lower or 'access' in n['title']|lower %}
+      <i class="bi bi-key-fill"></i>
+      {% else %}
+      <i class="bi bi-bell-fill"></i>
+      {% endif %}
+    </div>
+    <div class="notif-body">
+      <div class="notif-header-row">
+        <div class="notif-title">
+          {{ n['title'] }}
+          {% if not n['is_read'] %}<span class="notif-new-badge">NEW</span>{% endif %}
+        </div>
+        <div class="notif-time"><i class="bi bi-clock"></i> {{ n['created_at'][:16] }}</div>
+      </div>
+      <div class="notif-message">{{ n['message'] }}</div>
+    </div>
+  </div>
+  {% endfor %}
+  {% else %}
+  <div class="empty-state large-empty">
+    <i class="bi bi-bell-slash"></i>
+    <p>No notifications yet</p>
+    <p class="small text-muted">You'll receive updates here when your application status changes or a payment is processed.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

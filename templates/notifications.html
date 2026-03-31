@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Notifications – PensionGov Admin{% endblock %}
+{% block breadcrumb %}Notifications{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-title">Notification Centre</h2>
+    <p class="page-subtitle">All admin and pensioner system notifications</p>
+  </div>
+  <form method="POST" action="{{ url_for('clear_notifications') }}">
+    <button type="submit" class="btn-outline-gov"><i class="bi bi-check-all"></i> Mark All Read</button>
+  </form>
+</div>
+
+<div class="notif-list">
+  {% if notifications %}
+  {% for n in notifications %}
+  <div class="notif-card {% if not n['is_read'] %}notif-unread{% endif %}">
+    <div class="notif-icon-wrap notif-type-{{ n['recipient_type'] }}">
+      <i class="bi bi-{% if n['recipient_type']=='admin' %}shield-fill{% else %}person-fill{% endif %}"></i>
+    </div>
+    <div class="notif-body">
+      <div class="notif-header-row">
+        <div class="notif-title">{{ n['title'] }}</div>
+        <div class="notif-meta">
+          <span class="notif-recipient-badge notif-type-{{ n['recipient_type'] }}">{{ n['recipient_type']|title }}</span>
+          {% if n['pname'] %}
+          <span class="notif-pensioner"><i class="bi bi-person"></i> {{ n['pname'] }} {% if n['ppid'] %}({{ n['ppid'] }}){% endif %}</span>
+          {% endif %}
+          {% if not n['is_read'] %}<span class="notif-unread-dot"></span>{% endif %}
+        </div>
+      </div>
+      <div class="notif-message">{{ n['message'] }}</div>
+      <div class="notif-time"><i class="bi bi-clock"></i> {{ n['created_at'][:16] }}</div>
+    </div>
+  </div>
+  {% endfor %}
+  {% else %}
+  <div class="empty-state large-empty"><i class="bi bi-bell-slash"></i><p>No notifications</p></div>
+  {% endif %}
+</div>
+{% endblock %}

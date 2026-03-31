@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Reports – PensionGov Admin{% endblock %}
+{% block breadcrumb %}Reports{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-title">Reports & Analytics</h2>
+    <p class="page-subtitle">Summary reports for pension operations</p>
+  </div>
+  <button onclick="window.print()" class="btn-outline-gov">
+    <i class="bi bi-printer-fill"></i> Print Report
+  </button>
+</div>
+
+<div class="report-summary-row">
+  <div class="report-kpi">
+    <div class="report-kpi-icon text-success"><i class="bi bi-currency-rupee"></i></div>
+    <div>
+      <div class="report-kpi-value">₹{{ "{:,.2f}".format(grand_total) }}</div>
+      <div class="report-kpi-label">Total Disbursed (All Time)</div>
+    </div>
+  </div>
+</div>
+
+<div class="reports-grid">
+  <!-- Monthly Payments -->
+  <div class="report-card">
+    <div class="report-card-header"><i class="bi bi-calendar-month-fill"></i> Monthly Payment Summary</div>
+    <table class="gov-table gov-table-full">
+      <thead><tr><th>Month</th><th>Year</th><th>Payments</th><th>Total</th></tr></thead>
+      <tbody>
+        {% for m in monthly %}
+        <tr>
+          <td>{{ m['payment_month'] }}</td>
+          <td>{{ m['payment_year'] }}</td>
+          <td><span class="pension-id-badge">{{ m['cnt'] }}</span></td>
+          <td><strong class="text-success">₹{{ "{:,.2f}".format(m['total']) }}</strong></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="text-center text-muted py-3">No payment data</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pension Type Breakdown -->
+  <div class="report-card">
+    <div class="report-card-header"><i class="bi bi-tag-fill"></i> Pension Type Breakdown</div>
+    <table class="gov-table gov-table-full">
+      <thead><tr><th>Type</th><th>Count</th><th>Monthly Total</th></tr></thead>
+      <tbody>
+        {% for t in type_data %}
+        <tr>
+          <td><span class="type-badge">{{ t['pension_type'] }}</span></td>
+          <td>{{ t['cnt'] }}</td>
+          <td><strong>₹{{ "{:,.0f}".format(t['total'] or 0) }}</strong></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="3" class="text-center text-muted py-3">No data</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Status Summary -->
+  <div class="report-card">
+    <div class="report-card-header"><i class="bi bi-diagram-3-fill"></i> Status Summary</div>
+    <table class="gov-table gov-table-full">
+      <thead><tr><th>Status</th><th>Count</th><th>Distribution</th></tr></thead>
+      <tbody>
+        {% set total_p = status_data|sum(attribute='cnt') %}
+        {% for s in status_data %}
+        <tr>
+          <td><span class="status-badge status-{{ s['status']|lower|replace(' ','') }}">{{ s['status'] }}</span></td>
+          <td>{{ s['cnt'] }}</td>
+          <td>
+            <div class="progress-bar-wrap">
+              <div class="progress-bar-fill" style="width:{{ ((s['cnt']/total_p)*100)|round|int if total_p > 0 else 0 }}%"></div>
+              <span>{{ ((s['cnt']/total_p)*100)|round|int if total_p > 0 else 0 }}%</span>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="3" class="text-center text-muted py-3">No data</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Fraud Summary -->
+  <div class="report-card">
+    <div class="report-card-header"><i class="bi bi-shield-exclamation"></i> Fraud Alert Summary</div>
+    <table class="gov-table gov-table-full">
+      <thead><tr><th>Alert Type</th><th>Count</th></tr></thead>
+      <tbody>
+        {% for f in fraud_summary %}
+        <tr>
+          <td><span class="badge-alert">{{ f['alert_type'] }}</span></td>
+          <td>{{ f['cnt'] }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="2" class="text-center text-muted py-3">No fraud alerts</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

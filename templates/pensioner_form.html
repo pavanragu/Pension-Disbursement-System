@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} Pensioner – PensionGov Admin{% endblock %}
+{% block breadcrumb %}Pensioners / {{ action }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-title">{{ action }} Pensioner</h2>
+    <p class="page-subtitle">{% if action=='Add' %}Register a new pensioner{% else %}Update pensioner record{% endif %}</p>
+  </div>
+  <a href="{{ url_for('pensioners') }}" class="btn-outline-gov">
+    <i class="bi bi-arrow-left"></i> Back</a>
+</div>
+
+<div class="form-card">
+  <form method="POST">
+    <div class="form-sections">
+
+      <!-- Personal Info -->
+      <div class="form-section">
+        <div class="form-section-header"><i class="bi bi-person-badge"></i> Personal Information</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Full Name <span class="required">*</span></label>
+            <input type="text" name="name" id="admin-name" class="gov-input" required
+                   value="{{ pensioner['name'] if pensioner else '' }}"
+                   placeholder="Full name (alphabets only)"
+                   pattern="[A-Za-z\s]+"
+                   oninput="validateAdminName(this)"
+                   title="Name must contain alphabets only — no numbers allowed"/>
+            <div class="field-error" id="admin-name-error"
+                 style="display:none;color:#dc2626;font-size:11px;margin-top:4px;">
+              <i class="bi bi-exclamation-circle"></i> Name must contain alphabets only. Numbers are not allowed.
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Date of Birth</label>
+            <input type="date" name="dob" class="gov-input"
+                   value="{{ pensioner['dob'] if pensioner else '' }}"
+                   onchange="calcAge()"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Age <span class="required">*</span></label>
+            <input type="number" name="age" id="age_field" class="gov-input" min="18" max="150"
+                   value="{{ pensioner['age'] if pensioner else '' }}" placeholder="Age in years"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Gender</label>
+            <select name="gender" class="gov-input gov-select">
+              <option value="">Select</option>
+              {% for g in ['Male','Female','Other'] %}
+              <option value="{{ g }}" {% if pensioner and pensioner['gender']==g %}selected{% endif %}>{{ g }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone Number</label>
+            <input type="text" name="phone" class="gov-input"
+                   value="{{ pensioner['phone'] if pensioner else '' }}" placeholder="10-digit mobile"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" name="email" class="gov-input"
+                   value="{{ pensioner['email'] if pensioner else '' }}"
+                   placeholder="email@example.com"
+                   oninput="this.value=this.value.toLowerCase()"
+                   title="Email must be in lowercase only"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Aadhaar Number</label>
+            <input type="text" name="aadhaar" class="gov-input" maxlength="12"
+                   value="{{ pensioner['aadhaar'] if pensioner else '' }}" placeholder="12-digit Aadhaar"/>
+          </div>
+          <div class="form-group form-group-full">
+            <label class="form-label">Address</label>
+            <textarea name="address" class="gov-input gov-textarea" rows="2"
+                      placeholder="Full address">{{ pensioner['address'] if pensioner else '' }}</textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pension & Status -->
+      <div class="form-section">
+        <div class="form-section-header"><i class="bi bi-card-checklist"></i> Pension Details</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Pension Type <span class="required">*</span></label>
+            <select name="pension_type" class="gov-input gov-select">
+              {% for pt in ['Old Age','Disability','Widow','Ex-Serviceman','Other'] %}
+              <option value="{{ pt }}" {% if pensioner and pensioner['pension_type']==pt %}selected{% elif not pensioner and pt=='Old Age' %}selected{% endif %}>{{ pt }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Status <span class="required">*</span></label>
+            <select name="status" class="gov-input gov-select">
+              {% for s in ['Pending Verification','Under Verification','Approved','Disbursed','Rejected'] %}
+              <option value="{{ s }}" {% if pensioner and pensioner['status']==s %}selected{% elif not pensioner and s=='Pending Verification' %}selected{% endif %}>{{ s }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Monthly Amount (₹)</label>
+            <input type="number" name="monthly_amount" class="gov-input" step="0.01" min="0"
+                   value="{{ pensioner['monthly_amount'] if pensioner else '0' }}" placeholder="0.00"/>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bank Details -->
+      <div class="form-section">
+        <div class="form-section-header"><i class="bi bi-bank2"></i> Bank Account Details</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Bank Name</label>
+            <select name="bank_name" class="gov-input gov-select">
+              <option value="">Select Bank</option>
+              {% for b in ['State Bank of India','Indian Overseas Bank','Canara Bank','Bank of Baroda',
+                'Indian Bank','Union Bank of India','Bank of India','Punjab National Bank',
+                'HDFC Bank','ICICI Bank','Axis Bank','Other'] %}
+              <option value="{{ b }}" {% if bank and bank['bank_name']==b %}selected{% endif %}>{{ b }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Account Type</label>
+            <select name="account_type" class="gov-input gov-select">
+              {% for at in ['Savings','Current'] %}
+              <option value="{{ at }}" {% if bank and bank['account_type']==at %}selected{% endif %}>{{ at }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Account Number</label>
+            <input type="text" name="account_number" class="gov-input"
+                   value="{{ bank['account_number'] if bank else '' }}" placeholder="Account number"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">IFSC Code</label>
+            <input type="text" name="ifsc_code" class="gov-input" maxlength="11"
+                   value="{{ bank['ifsc_code'] if bank else '' }}"
+                   placeholder="e.g. SBIN0001234" style="text-transform:uppercase"
+                   oninput="this.value=this.value.toUpperCase()"/>
+          </div>
+          <div class="form-group form-group-full">
+            <label class="form-label">Branch Name</label>
+            <input type="text" name="branch" class="gov-input"
+                   value="{{ bank['branch'] if bank else '' }}" placeholder="Branch name"/>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="form-actions">
+      <a href="{{ url_for('pensioners') }}" class="btn-outline-gov">Cancel</a>
+      <button type="submit" class="btn-primary-gov">
+        <i class="bi bi-{% if action=='Add' %}person-plus-fill{% else %}check-circle-fill{% endif %}"></i>
+        {{ action }} Pensioner
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+  // ── Name validation ───────────────────────────────────────
+  function validateAdminName(input) {
+    const val      = input.value;
+    const errorEl  = document.getElementById('admin-name-error');
+    const invalid  = /[^A-Za-z\s]/.test(val);
+
+    if (invalid) {
+      input.value             = val.replace(/[^A-Za-z\s]/g, '');
+      errorEl.style.display   = 'block';
+      input.style.borderColor = '#dc2626';
+      input.style.boxShadow   = '0 0 0 3px rgba(220,38,38,0.1)';
+    } else {
+      errorEl.style.display   = 'none';
+      input.style.borderColor = '';
+      input.style.boxShadow   = '';
+    }
+  }
+
+  // ── Block digit keypresses in name field ──────────────────
+  document.addEventListener('DOMContentLoaded', function() {
+    const nameInput = document.getElementById('admin-name');
+    if (nameInput) {
+      nameInput.addEventListener('keypress', function(e) {
+        if (e.key >= '0' && e.key <= '9') {
+          e.preventDefault();
+          const errorEl = document.getElementById('admin-name-error');
+          errorEl.style.display   = 'block';
+          nameInput.style.borderColor = '#dc2626';
+          nameInput.style.boxShadow   = '0 0 0 3px rgba(220,38,38,0.1)';
+          setTimeout(function() {
+            errorEl.style.display   = 'none';
+            nameInput.style.borderColor = '';
+            nameInput.style.boxShadow   = '';
+          }, 3000);
+        }
+      });
+    }
+
+    // ── Force email lowercase ────────────────────────────────
+    const emailInput = document.querySelector('input[name="email"]');
+    if (emailInput) {
+      emailInput.addEventListener('blur', function() {
+        this.value = this.value.toLowerCase().trim();
+      });
+    }
+
+    // ── DOB age calc ─────────────────────────────────────────
+    const dobInput = document.querySelector('input[name="dob"]');
+    if (dobInput) dobInput.addEventListener('change', calcAge);
+
+    // ── Form submit validation ───────────────────────────────
+    const form = document.querySelector('form');
+    if (form) {
+      form.addEventListener('submit', function(e) {
+        const nameVal = nameInput ? nameInput.value.trim() : '';
+        if (/[^A-Za-z\s]/.test(nameVal)) {
+          e.preventDefault();
+          document.getElementById('admin-name-error').style.display = 'block';
+          nameInput.focus();
+          return false;
+        }
+        // Force email lowercase on submit
+        if (emailInput) {
+          emailInput.value = emailInput.value.toLowerCase().trim();
+        }
+      });
+    }
+  });
+</script>
+{% endblock %}

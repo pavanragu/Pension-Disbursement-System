@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Fraud Alerts – PensionGov Admin{% endblock %}
+{% block breadcrumb %}Fraud Detection{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-title">Fraud Detection Module</h2>
+    <p class="page-subtitle">Automated alerts for suspicious pension records</p>
+  </div>
+  <form method="POST" action="{{ url_for('rerun_fraud') }}">
+    <button type="submit" class="btn-outline-gov"><i class="bi bi-arrow-repeat"></i> Re-run Detection</button>
+  </form>
+</div>
+
+<div class="fraud-info-grid">
+  <div class="fraud-info-card"><i class="bi bi-person-x-fill"></i><div><strong>Suspicious Age</strong><br>Flags pensioners with age &gt; 120</div></div>
+  <div class="fraud-info-card"><i class="bi bi-bank2"></i><div><strong>Duplicate Bank Account</strong><br>Same account linked to multiple pensioners</div></div>
+  <div class="fraud-info-card"><i class="bi bi-files"></i><div><strong>Duplicate Aadhaar / Name</strong><br>Multiple records with same Aadhaar or identical names</div></div>
+</div>
+
+<div class="table-container">
+  <table class="gov-table gov-table-full">
+    <thead>
+      <tr><th>#</th><th>Pensioner</th><th>Alert Type</th><th>Description</th><th>Detected</th><th>Status</th><th>Action</th></tr>
+    </thead>
+    <tbody>
+      {% for a in alerts %}
+      <tr class="{% if not a['is_resolved'] %}fraud-row-active{% endif %}">
+        <td class="text-muted small">{{ loop.index }}</td>
+        <td>
+          <div class="td-name">{{ a['name'] or 'N/A' }}</div>
+          <div class="td-sub">{{ a['pension_id'] or '' }}</div>
+        </td>
+        <td><span class="badge-alert">{{ a['alert_type'] }}</span></td>
+        <td class="desc-cell">{{ a['description'] }}</td>
+        <td><span class="date-badge">{{ a['created_at'][:10] }}</span></td>
+        <td>
+          {% if a['is_resolved'] %}
+          <span class="status-badge status-approved">Resolved</span>
+          {% else %}
+          <span class="status-badge status-pending">Active</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if not a['is_resolved'] %}
+          <form method="POST" action="{{ url_for('resolve_fraud', aid=a['id']) }}">
+            <button type="submit" class="btn-resolve"><i class="bi bi-check-circle"></i> Resolve</button>
+          </form>
+          {% else %}<span class="text-muted">—</span>{% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="text-center py-5">
+        <div class="empty-state"><i class="bi bi-shield-check text-success"></i><p>No fraud alerts</p></div>
+      </td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

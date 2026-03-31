@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Register – PensionGov</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet"/>
+</head>
+<body class="register-body">
+  <div class="register-topbar">
+    <div class="register-topbar-brand">
+      <i class="bi bi-shield-check"></i> PensionGov
+    </div>
+    <div class="register-topbar-links">
+      <a href="{{ url_for('pensioner_login') }}"><i class="bi bi-box-arrow-in-right"></i> Already registered? Login</a>
+    </div>
+  </div>
+
+  <div class="register-wrapper">
+    <div class="register-hero">
+      <div class="register-hero-icon"><i class="bi bi-file-earmark-person-fill"></i></div>
+      <h1 class="register-title">Pension Application</h1>
+      <p class="register-subtitle">Government of Tamil Nadu · Department of Social Welfare<br>
+        Complete the form below to submit your pension application</p>
+    </div>
+
+    {% if error %}
+    <div class="register-error"><i class="bi bi-exclamation-triangle-fill"></i> {{ error }}</div>
+    {% endif %}
+
+    <form method="POST" class="register-form" id="regForm">
+
+      <!-- STEP 1: Personal Info -->
+      <div class="reg-section">
+        <div class="reg-section-header">
+          <div class="reg-step-num">1</div>
+          <div>
+            <div class="reg-section-title"><i class="bi bi-person-badge-fill"></i> Personal Information</div>
+            <div class="reg-section-sub">Basic personal details as per official records</div>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group form-group-full">
+            <label class="form-label">Full Name (as per Aadhaar) <span class="required">*</span></label>
+            <input type="text" name="name" id="reg-name" class="gov-input" required
+                   placeholder="Enter your full name (alphabets only)"
+                   pattern="[A-Za-z\s]+"
+                   oninput="validateName(this)"
+                   title="Name must contain alphabets only — no numbers or special characters"/>
+            <div class="field-error" id="name-error" style="display:none;color:#dc2626;font-size:11px;margin-top:4px;">
+              <i class="bi bi-exclamation-circle"></i> Name must contain alphabets only. Numbers are not allowed.
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Date of Birth <span class="required">*</span></label>
+            <input type="date" name="dob" class="gov-input" required id="dob" onchange="calcAge()"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Age (auto-calculated)</label>
+            <input type="number" name="age" class="gov-input" id="age_field" placeholder="Age" readonly/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Gender <span class="required">*</span></label>
+            <select name="gender" class="gov-input gov-select" required>
+              <option value="">Select Gender</option>
+              <option>Male</option><option>Female</option><option>Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Aadhaar Number <span class="required">*</span></label>
+            <input type="text" name="aadhaar" class="gov-input" maxlength="12" pattern="\d{12}"
+                   placeholder="12-digit Aadhaar" required/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Mobile Number <span class="required">*</span></label>
+            <input type="tel" name="phone" class="gov-input" maxlength="10" pattern="\d{10}"
+                   placeholder="10-digit mobile" required/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Address <span class="required">*</span></label>
+            <input type="email" name="email" class="gov-input" required
+                   placeholder="your@email.com"
+                   oninput="this.value=this.value.toLowerCase()"
+                   title="Email must be in lowercase only"/>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
+              <i class="bi bi-info-circle"></i> Email will be saved in lowercase automatically
+            </div>
+          </div>
+          <div class="form-group form-group-full">
+            <label class="form-label">Residential Address</label>
+            <textarea name="address" class="gov-input gov-textarea" rows="2"
+                      placeholder="Door No, Street, Area, City, Pincode"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2: Pension Details -->
+      <div class="reg-section">
+        <div class="reg-section-header">
+          <div class="reg-step-num">2</div>
+          <div>
+            <div class="reg-section-title"><i class="bi bi-card-checklist"></i> Pension Details</div>
+            <div class="reg-section-sub">Select the applicable pension category</div>
+          </div>
+        </div>
+        <div class="pension-type-grid">
+          {% for pt, icon, desc in [
+            ('Old Age','person-walking','For senior citizens aged 60 years and above'),
+            ('Disability','universal-access-circle','For persons with certified disabilities'),
+            ('Widow','heart-half','For widowed women who have lost their spouse'),
+            ('Ex-Serviceman','award-fill','For retired personnel from armed forces'),
+            ('Other','three-dots','Other eligible categories as per government norms'),
+          ] %}
+          <label class="pension-type-card">
+            <input type="radio" name="pension_type" value="{{ pt }}" {% if pt=='Old Age' %}checked{% endif %}/>
+            <div class="ptc-inner">
+              <i class="bi bi-{{ icon }}"></i>
+              <div class="ptc-title">{{ pt }}</div>
+              <div class="ptc-desc">{{ desc }}</div>
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- STEP 3: Bank Details -->
+      <div class="reg-section">
+        <div class="reg-section-header">
+          <div class="reg-step-num">3</div>
+          <div>
+            <div class="reg-section-title"><i class="bi bi-bank2"></i> Bank Account Details</div>
+            <div class="reg-section-sub">Pension will be credited to this account</div>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Bank Name <span class="required">*</span></label>
+            <select name="bank_name" class="gov-input gov-select" required>
+              <option value="">Select Bank</option>
+              {% for b in ['State Bank of India','Indian Overseas Bank','Canara Bank','Bank of Baroda',
+                'Indian Bank','Union Bank of India','Bank of India','Punjab National Bank',
+                'HDFC Bank','ICICI Bank','Axis Bank','Other'] %}
+              <option>{{ b }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Account Type</label>
+            <select name="account_type" class="gov-input gov-select">
+              <option>Savings</option><option>Current</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Account Number <span class="required">*</span></label>
+            <input type="text" name="account_number" class="gov-input" required
+                   placeholder="Bank account number"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">IFSC Code <span class="required">*</span></label>
+            <input type="text" name="ifsc_code" class="gov-input" required
+                   maxlength="11" placeholder="e.g. SBIN0001234" style="text-transform:uppercase"
+                   oninput="this.value=this.value.toUpperCase()"/>
+          </div>
+          <div class="form-group form-group-full">
+            <label class="form-label">Branch Name</label>
+            <input type="text" name="branch" class="gov-input" placeholder="Branch name and city"/>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 4: Account Setup -->
+      <div class="reg-section">
+        <div class="reg-section-header">
+          <div class="reg-step-num">4</div>
+          <div>
+            <div class="reg-section-title"><i class="bi bi-key-fill"></i> Portal Account Setup</div>
+            <div class="reg-section-sub">Set your password to access the pensioner portal</div>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Password <span class="required">*</span></label>
+            <div class="field-input-wrap">
+              <i class="bi bi-lock-fill field-icon"></i>
+              <input type="password" name="password" id="reg-pw" class="gov-input" required
+                     minlength="6" placeholder="Min. 6 characters" style="padding-left:36px"/>
+              <button type="button" class="pw-toggle" onclick="togglePw('reg-pw','reg-eye')">
+                <i class="bi bi-eye" id="reg-eye"></i></button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Confirm Password <span class="required">*</span></label>
+            <div class="field-input-wrap">
+              <i class="bi bi-lock-fill field-icon"></i>
+              <input type="password" name="confirm_password" id="reg-pw2" class="gov-input" required
+                     placeholder="Re-enter password" style="padding-left:36px"/>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="register-declaration">
+        <label class="decl-label">
+          <input type="checkbox" required/>
+          I hereby declare that the information provided above is true and correct to the best of my knowledge.
+          I understand that any false information may lead to rejection or cancellation of my pension application.
+        </label>
+      </div>
+
+      <div class="register-actions">
+        <a href="{{ url_for('pensioner_login') }}" class="btn-outline-gov">Cancel</a>
+        <button type="submit" class="btn-primary-gov btn-lg-gov">
+          <i class="bi bi-send-fill"></i> Submit Pension Application
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    // ── Name validation — alphabets and spaces only ───────────
+    function validateName(input) {
+      const val      = input.value;
+      const errorEl  = document.getElementById('name-error');
+      const hasDigit = /\d/.test(val);
+      const hasSpecial = /[^A-Za-z\s]/.test(val);
+
+      if (hasDigit || hasSpecial) {
+        // Remove the invalid character immediately
+        input.value = val.replace(/[^A-Za-z\s]/g, '');
+        // Show error message
+        errorEl.style.display = 'block';
+        input.style.borderColor = '#dc2626';
+        input.style.boxShadow   = '0 0 0 3px rgba(220,38,38,0.1)';
+      } else {
+        errorEl.style.display = 'none';
+        input.style.borderColor = '';
+        input.style.boxShadow   = '';
+      }
+    }
+
+    // ── Prevent numbers from being typed in name field ────────
+    document.addEventListener('DOMContentLoaded', function() {
+      const nameInput = document.getElementById('reg-name');
+      if (nameInput) {
+        nameInput.addEventListener('keypress', function(e) {
+          // Block digits 0-9
+          if (e.key >= '0' && e.key <= '9') {
+            e.preventDefault();
+            document.getElementById('name-error').style.display = 'block';
+            nameInput.style.borderColor = '#dc2626';
+            nameInput.style.boxShadow   = '0 0 0 3px rgba(220,38,38,0.1)';
+            // Auto-hide error after 3 seconds
+            setTimeout(function() {
+              document.getElementById('name-error').style.display = 'none';
+              nameInput.style.borderColor = '';
+              nameInput.style.boxShadow   = '';
+            }, 3000);
+          }
+        });
+      }
+    });
+
+    // ── Form submit validation ─────────────────────────────────
+    document.getElementById('regForm').addEventListener('submit', function(e) {
+      const nameInput = document.getElementById('reg-name');
+      const nameVal   = nameInput ? nameInput.value.trim() : '';
+
+      if (/\d/.test(nameVal) || /[^A-Za-z\s]/.test(nameVal)) {
+        e.preventDefault();
+        document.getElementById('name-error').style.display = 'block';
+        nameInput.focus();
+        return false;
+      }
+
+      // Force email to lowercase before submitting
+      const emailInput = document.querySelector('input[name="email"]');
+      if (emailInput) {
+        emailInput.value = emailInput.value.toLowerCase().trim();
+      }
+    });
+
+    function calcAge() {
+      const dob = document.getElementById('dob').value;
+      if (dob) {
+        const bd = new Date(dob);
+        const today = new Date();
+        let age = today.getFullYear() - bd.getFullYear();
+        const m = today.getMonth() - bd.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < bd.getDate())) age--;
+        document.getElementById('age_field').value = age;
+      }
+    }
+    function togglePw(id,eyeId){
+      const p=document.getElementById(id),e=document.getElementById(eyeId);
+      p.type=p.type==='password'?'text':'password';
+      e.className=p.type==='password'?'bi bi-eye':'bi bi-eye-slash';
+    }
+    // Highlight selected pension type
+    document.querySelectorAll('.pension-type-card input').forEach(radio => {
+      radio.addEventListener('change', () => {
+        document.querySelectorAll('.pension-type-card').forEach(c => c.classList.remove('selected'));
+        if (radio.checked) radio.closest('.pension-type-card').classList.add('selected');
+      });
+      if (radio.checked) radio.closest('.pension-type-card').classList.add('selected');
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+{% extends "pensioner_base.html" %}
+{% block title %}Payment History – PensionGov{% endblock %}
+{% block breadcrumb %}Payment History{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-title">Payment History</h2>
+    <p class="page-subtitle">All pension payments credited to your account</p>
+  </div>
+</div>
+
+<!-- Summary Banner -->
+<div class="tables-row mb-4">
+  <div class="kpi-card kpi-green" style="flex:1">
+    <div class="kpi-icon"><i class="bi bi-currency-rupee"></i></div>
+    <div class="kpi-data">
+      <div class="kpi-value">₹{{ "{:,.2f}".format(total) }}</div>
+      <div class="kpi-label">Total Amount Received</div>
+    </div>
+  </div>
+  <div class="kpi-card kpi-blue" style="flex:1">
+    <div class="kpi-icon"><i class="bi bi-receipt"></i></div>
+    <div class="kpi-data">
+      <div class="kpi-value">{{ payments|length }}</div>
+      <div class="kpi-label">Total Payments</div>
+    </div>
+  </div>
+  <div class="kpi-card kpi-amber" style="flex:1">
+    <div class="kpi-icon"><i class="bi bi-currency-rupee"></i></div>
+    <div class="kpi-data">
+      <div class="kpi-value">₹{{ "{:,.0f}".format(p['monthly_amount'] or 0) }}</div>
+      <div class="kpi-label">Monthly Pension</div>
+    </div>
+  </div>
+</div>
+
+{% if payments %}
+<div class="table-container">
+  <table class="gov-table gov-table-full">
+    <thead>
+      <tr><th>#</th><th>Month / Year</th><th>Amount</th><th>Payment Date</th><th>Method</th><th>Reference No.</th></tr>
+    </thead>
+    <tbody>
+      {% for pmt in payments %}
+      <tr>
+        <td class="text-muted small">{{ loop.index }}</td>
+        <td>
+          <div class="td-name">{{ pmt['payment_month'] }} {{ pmt['payment_year'] }}</div>
+        </td>
+        <td><strong class="text-success fs-6">₹{{ "{:,.2f}".format(pmt['amount']) }}</strong></td>
+        <td><span class="date-badge">{{ pmt['payment_date'] }}</span></td>
+        <td>{{ pmt['method'] }}</td>
+        <td>
+          {% if pmt['reference'] %}
+          <span class="pension-id-badge">{{ pmt['reference'] }}</span>
+          {% else %}—{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr class="table-total-row">
+        <td colspan="2" class="text-end fw-bold">TOTAL</td>
+        <td><strong class="text-success">₹{{ "{:,.2f}".format(total) }}</strong></td>
+        <td colspan="3"></td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+{% else %}
+<div class="empty-state large-empty">
+  <i class="bi bi-wallet2"></i>
+  <p>No payments have been recorded yet.</p>
+  <p class="small text-muted">Payments will appear here once your pension is approved and disbursed.</p>
+</div>
+{% endif %}
+{% endblock %}

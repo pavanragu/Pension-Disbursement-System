@@ -1,0 +1,155 @@
+{% extends "pensioner_base.html" %}
+{% block title %}My Profile – PensionGov{% endblock %}
+{% block breadcrumb %}My Profile{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-title">My Profile</h2>
+    <p class="page-subtitle">Your registered personal and bank details</p>
+  </div>
+</div>
+
+<div class="profile-page-grid">
+
+  <!-- ID Card -->
+  <div class="profile-id-card">
+    <div class="p-avatar-large"><i class="bi bi-person-fill"></i></div>
+    <div class="p-profile-name">{{ p['name'] }}</div>
+    {% if p['pension_id'] %}
+    <div class="p-pension-id-chip">{{ p['pension_id'] }}</div>
+    {% endif %}
+    <div class="p-status-chip">
+      <i class="bi bi-{% if p['status']=='Approved' %}check-circle-fill{% elif p['status']=='Disbursed' %}wallet-fill{% elif p['status']=='Rejected' %}x-circle-fill{% else %}hourglass-split{% endif %}"></i>
+      {{ p['status'] }}
+    </div>
+
+    <div class="p-detail-rows">
+      <div class="p-detail-row">
+        <div class="p-detail-row-label">Pension Type</div>
+        <div class="p-detail-row-value">{{ p['pension_type'] }}</div>
+      </div>
+      <div class="p-detail-row">
+        <div class="p-detail-row-label">Monthly Amount</div>
+        <div class="p-detail-row-value" style="color:var(--gold-light);font-weight:700;">₹{{ "{:,.0f}".format(p['monthly_amount'] or 0) }}</div>
+      </div>
+      <div class="p-detail-row">
+        <div class="p-detail-row-label">Registered On</div>
+        <div class="p-detail-row-value">{{ p['created_at'][:10] }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Details Sections -->
+  <div class="profile-sections">
+
+    <!-- Personal Info -->
+    <div class="profile-section">
+      <div class="profile-section-header">
+        <i class="bi bi-person-badge-fill"></i> Personal Information
+      </div>
+      <div class="profile-details-grid">
+        <div class="profile-detail-item">
+          <div class="profile-detail-label">Full Name</div>
+          <div class="profile-detail-value">{{ p['name'] }}</div>
+        </div>
+        <div class="profile-detail-item">
+          <div class="profile-detail-label">Date of Birth</div>
+          <div class="profile-detail-value">{{ p['dob'] or '—' }}</div>
+        </div>
+        <div class="profile-detail-item">
+          <div class="profile-detail-label">Age</div>
+          <div class="profile-detail-value">{{ p['age'] or '—' }} years</div>
+        </div>
+        <div class="profile-detail-item">
+          <div class="profile-detail-label">Gender</div>
+          <div class="profile-detail-value">{{ p['gender'] or '—' }}</div>
+        </div>
+        <div class="profile-detail-item">
+          <div class="profile-detail-label">Mobile Number</div>
+          <div class="profile-detail-value">{{ p['phone'] or '—' }}</div>
+        </div>
+        <div class="profile-detail-item">
+          <div class="profile-detail-label">Email Address</div>
+          <div class="profile-detail-value">{{ p['email'] or '—' }}</div>
+        </div>
+        <div class="profile-detail-item" style="grid-column:span 2">
+          <div class="profile-detail-label">Residential Address</div>
+          <div class="profile-detail-value">{{ p['address'] or '—' }}</div>
+        </div>
+        <div class="profile-detail-item">
+          <div class="profile-detail-label">Aadhaar Number</div>
+          <div class="profile-detail-value">
+            {% if p['aadhaar'] %}
+              XXXX XXXX {{ p['aadhaar'][-4:] }}
+            {% else %}—{% endif %}
+          </div>
+        </div>
+        <div class="profile-detail-item">
+          <div class="profile-detail-label">Pension Type</div>
+          <div class="profile-detail-value"><span class="type-badge">{{ p['pension_type'] }}</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bank Details -->
+    <div class="profile-section">
+      <div class="profile-section-header">
+        <i class="bi bi-bank2"></i> Bank Account Details
+      </div>
+      {% if bank %}
+      <div class="bank-card-display">
+        <div class="bank-card-chip">{{ bank['bank_name'] or 'Bank Account' }} &nbsp;·&nbsp; {{ bank['account_type'] or 'Savings' }}</div>
+        <div class="bank-card-number">
+          {% set acc = bank['account_number'] or '' %}
+          {% if acc|length > 4 %}
+            ···· ···· {{ acc[-4:] }}
+          {% elif acc %}
+            ····{{ acc }}
+          {% else %}
+            ···· ···· ····
+          {% endif %}
+        </div>
+        <div class="bank-card-bottom">
+          <div>
+            <div class="bank-card-name-label">Account Holder</div>
+            <div class="bank-card-name-value">{{ p['name'] }}</div>
+          </div>
+          <div>
+            <div class="bank-card-ifsc-label">IFSC Code</div>
+            <div class="bank-card-ifsc-value">{{ bank['ifsc_code'] or '—' }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="profile-details-grid" style="margin-top:4px;">
+        <div class="profile-detail-item">
+          <div class="profile-detail-label">Bank Name</div>
+          <div class="profile-detail-value">{{ bank['bank_name'] or '—' }}</div>
+        </div>
+        <div class="profile-detail-item">
+          <div class="profile-detail-label">Branch</div>
+          <div class="profile-detail-value">{{ bank['branch'] or '—' }}</div>
+        </div>
+        <div class="profile-detail-item">
+          <div class="profile-detail-label">Account Number</div>
+          <div class="profile-detail-value" style="font-family:monospace">{{ bank['account_number'] or '—' }}</div>
+        </div>
+        <div class="profile-detail-item">
+          <div class="profile-detail-label">Account Type</div>
+          <div class="profile-detail-value">{{ bank['account_type'] or 'Savings' }}</div>
+        </div>
+      </div>
+      {% else %}
+      <div class="empty-state"><i class="bi bi-bank2"></i><p>No bank details on record</p></div>
+      {% endif %}
+    </div>
+
+    <!-- Important Notice -->
+    <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:10px;padding:14px 18px;font-size:13px;color:#92400e;">
+      <i class="bi bi-info-circle-fill"></i>
+      <strong> Notice:</strong> To update your profile or bank details, please visit your nearest
+      Social Welfare Office with supporting documents, or contact the helpline.
+    </div>
+
+  </div>
+</div>
+{% endblock %}

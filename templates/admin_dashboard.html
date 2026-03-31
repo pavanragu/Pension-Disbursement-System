@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% block title %}Dashboard – PensionGov Admin{% endblock %}
+{% block breadcrumb %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-title">Operations Dashboard</h2>
+    <p class="page-subtitle">Real-time overview of pension disbursement activities</p>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('add_pensioner') }}" class="btn-primary-gov">
+      <i class="bi bi-person-plus-fill"></i> Add Pensioner</a>
+  </div>
+</div>
+
+<!-- KPI Grid -->
+<div class="kpi-grid">
+  <div class="kpi-card kpi-blue">
+    <div class="kpi-icon"><i class="bi bi-people-fill"></i></div>
+    <div class="kpi-data"><div class="kpi-value">{{ total_pensioners }}</div><div class="kpi-label">Total Pensioners</div></div>
+    <div class="kpi-trend"><i class="bi bi-person-check"></i> Registered</div>
+  </div>
+  <div class="kpi-card kpi-green">
+    <div class="kpi-icon"><i class="bi bi-currency-rupee"></i></div>
+    <div class="kpi-data"><div class="kpi-value">₹{{ "{:,.0f}".format(total_monthly) }}</div><div class="kpi-label">Monthly Disbursement</div></div>
+    <div class="kpi-trend"><i class="bi bi-calendar-check"></i> Active</div>
+  </div>
+  <div class="kpi-card kpi-amber">
+    <div class="kpi-icon"><i class="bi bi-hourglass-split"></i></div>
+    <div class="kpi-data"><div class="kpi-value">{{ pending_approvals }}</div><div class="kpi-label">Pending Approvals</div></div>
+    <div class="kpi-trend"><i class="bi bi-clock-history"></i> Awaiting</div>
+  </div>
+  <div class="kpi-card kpi-red">
+    <div class="kpi-icon"><i class="bi bi-shield-exclamation"></i></div>
+    <div class="kpi-data"><div class="kpi-value">{{ fraud_count }}</div><div class="kpi-label">Fraud Alerts</div></div>
+    <div class="kpi-trend"><i class="bi bi-exclamation-triangle"></i> Active</div>
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="charts-row">
+  <div class="chart-card chart-large">
+    <div class="chart-header">
+      <h3 class="chart-title">Monthly Payment Trend</h3>
+      <p class="chart-subtitle">Disbursements over last 6 months</p>
+    </div>
+    <div class="chart-body"><canvas id="paymentChart" height="100"></canvas></div>
+  </div>
+  <div class="chart-card chart-small">
+    <div class="chart-header">
+      <h3 class="chart-title">Status Distribution</h3>
+      <p class="chart-subtitle">Pipeline overview</p>
+    </div>
+    <div class="chart-body"><canvas id="statusChart" height="180"></canvas></div>
+  </div>
+</div>
+
+<!-- New Registrations + Recent Alerts -->
+<div class="tables-row">
+  <div class="table-card">
+    <div class="table-card-header">
+      <h3><i class="bi bi-person-plus-fill text-warning"></i> New Registrations
+        {% if new_registrations > 0 %}<span class="badge bg-warning text-dark ms-2">{{ new_registrations }}</span>{% endif %}
+      </h3>
+      <a href="{{ url_for('pensioners') }}?status=Pending+Verification" class="view-all">View All <i class="bi bi-arrow-right"></i></a>
+    </div>
+    <div class="table-card-body">
+      {% if recent_regs %}
+      <table class="gov-table">
+        <thead><tr><th>Name</th><th>Type</th><th>Bank</th><th>Action</th></tr></thead>
+        <tbody>
+          {% for r in recent_regs %}
+          <tr>
+            <td>
+              <div class="td-name">{{ r['name'] }}</div>
+              <div class="td-sub">{{ r['created_at'][:10] }}</div>
+            </td>
+            <td><span class="type-badge">{{ r['pension_type'] }}</span></td>
+            <td><div class="td-sub">{{ r['bank_name'] or '—' }}</div></td>
+            <td>
+              <form method="POST" action="{{ url_for('approve_pensioner', pid=r['id']) }}" class="d-inline">
+                <input type="hidden" name="monthly_amount" value="7000"/>
+                <button type="submit" class="btn-approve" onclick="return confirm('Approve {{ r['name'] }}?')">
+                  <i class="bi bi-check-circle-fill"></i> Approve
+                </button>
+              </form>
+              <a href="{{ url_for('view_pensioner', pid=r['id']) }}" class="btn-view-sm ms-1">
+                <i class="bi bi-eye-fill"></i>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state"><i class="bi bi-inbox"></i><p>No new registrations</p></div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div class="table-card-header">
+      <h3><i class="bi bi-shield-exclamation text-danger"></i> Fraud Alerts</h3>
+      <a href="{{ url_for('fraud') }}" class="view-all">View All <i class="bi bi-arrow-right"></i></a>
+    </div>
+    <div class="table-card-body">
+      {% if recent_alerts %}
+      <table class="gov-table">
+        <thead><tr><th>Pensioner</th><th>Alert Type</th></tr></thead>
+        <tbody>
+          {% for a in recent_alerts %}
+          <tr>
+            <td><div class="td-name">{{ a['name'] or 'N/A' }}</div><div class="td-sub">{{ a['pension_id'] or '' }}</div></td>
+            <td><span class="badge-alert">{{ a['alert_type'] }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state"><i class="bi bi-shield-check text-success"></i><p>No active fraud alerts</p></div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Profile Update Requests Alert -->
+{% if pending_profile_requests > 0 %}
+<div class="profile-req-alert-bar">
+  <div class="pra-left">
+    <div class="pra-icon"><i class="bi bi-person-lines-fill"></i></div>
+    <div>
+      <div class="pra-title">{{ pending_profile_requests }} Profile Update Request{{ 's' if pending_profile_requests != 1 }} Awaiting Review</div>
+      <div class="pra-sub">Pensioners have submitted changes to their contact or bank details</div>
+    </div>
+  </div>
+  <a href="{{ url_for('profile_update_requests') }}" class="btn-primary-gov">
+    <i class="bi bi-arrow-right-circle-fill"></i> Review Now
+  </a>
+</div>
+{% endif %}
+
+<!-- Recent Payments -->
+<div class="table-card mt-4">
+  <div class="table-card-header">
+    <h3><i class="bi bi-credit-card text-success"></i> Recent Payments</h3>
+    <a href="{{ url_for('payments') }}" class="view-all">View All <i class="bi bi-arrow-right"></i></a>
+  </div>
+  <div class="table-card-body">
+    {% if recent_payments %}
+    <table class="gov-table gov-table-full">
+      <thead><tr><th>Pensioner</th><th>Amount</th><th>Month</th><th>Date</th></tr></thead>
+      <tbody>
+        {% for p in recent_payments %}
+        <tr>
+          <td><div class="td-name">{{ p['name'] }}</div></td>
+          <td><strong class="text-success">₹{{ "{:,.0f}".format(p['amount']) }}</strong></td>
+          <td>{{ p['payment_month'] }} {{ p['payment_year'] }}</td>
+          <td><span class="date-badge">{{ p['payment_date'] }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><i class="bi bi-inbox"></i><p>No payments recorded yet</p></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const payLabels = {{ chart_labels|safe }};
+const payValues = {{ chart_values|safe }};
+const statusLabels = {{ status_labels|safe }};
+const statusCounts = {{ status_counts|safe }};
+const pCtx = document.getElementById('paymentChart').getContext('2d');
+new Chart(pCtx, {
+  type: 'bar',
+  data: { labels: payLabels, datasets: [{
+    label: 'Total Payments (₹)', data: payValues,
+    backgroundColor: 'rgba(26,74,140,0.75)', borderColor: '#1a4a8c',
+    borderWidth: 2, borderRadius: 6
+  }]},
+  options: { responsive: true, plugins: { legend: { display: false }},
+    scales: {
+      y: { beginAtZero: true, ticks: { callback: v=>'₹'+v.toLocaleString('en-IN'), font:{family:'DM Sans'}}, grid:{color:'rgba(0,0,0,0.05)'}},
+      x: { grid: { display: false }, ticks: { font:{family:'DM Sans'}}}
+    }}
+});
+const sCtx = document.getElementById('statusChart').getContext('2d');
+new Chart(sCtx, {
+  type: 'doughnut',
+  data: { labels: statusLabels, datasets: [{
+    data: statusCounts,
+    backgroundColor: ['#f59e0b','#3b82f6','#10b981','#1a4a8c','#ef4444','#8b5cf6'],
+    borderWidth: 0, hoverOffset: 8
+  }]},
+  options: { responsive: true, cutout: '65%',
+    plugins: { legend: { position:'bottom', labels:{ font:{family:'DM Sans',size:11}, padding:12}}}}
+});
+</script>
+{% endblock %}

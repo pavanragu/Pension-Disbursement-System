@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% block title %}{{ pensioner['name'] }} – PensionGov Admin{% endblock %}
+{% block breadcrumb %}Pensioners / Profile{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-title">Pensioner Profile</h2>
+    <p class="page-subtitle">Full record for {{ pensioner['name'] }}</p>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('edit_pensioner', pid=pensioner['id']) }}" class="btn-primary-gov">
+      <i class="bi bi-pencil-fill"></i> Edit</a>
+    <a href="{{ url_for('pensioners') }}" class="btn-outline-gov">
+      <i class="bi bi-arrow-left"></i> Back</a>
+  </div>
+</div>
+
+<div class="profile-grid">
+
+  <!-- Left: ID Card -->
+  <div class="profile-main-card">
+    <div class="profile-avatar-section">
+      <div class="profile-avatar"><i class="bi bi-person-fill"></i></div>
+      {% if pensioner['pension_id'] %}
+      <div class="profile-id-badge">{{ pensioner['pension_id'] }}</div>
+      {% else %}
+      <div class="profile-id-badge" style="background:rgba(200,150,46,0.5)">Pending ID</div>
+      {% endif %}
+      <span class="status-badge status-{{ pensioner['status']|lower|replace(' ','') }} status-lg">
+        {{ pensioner['status'] }}
+      </span>
+    </div>
+
+    <div class="profile-details">
+      <h3 class="profile-name">{{ pensioner['name'] }}</h3>
+      <div class="detail-grid">
+        <div class="detail-item">
+          <span class="detail-label"><i class="bi bi-calendar3"></i> Date of Birth</span>
+          <span class="detail-value">{{ pensioner['dob'] or '—' }} (Age: {{ pensioner['age'] or '?' }})</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label"><i class="bi bi-gender-ambiguous"></i> Gender</span>
+          <span class="detail-value">{{ pensioner['gender'] or '—' }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label"><i class="bi bi-telephone-fill"></i> Phone</span>
+          <span class="detail-value">{{ pensioner['phone'] or '—' }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label"><i class="bi bi-envelope-fill"></i> Email</span>
+          <span class="detail-value">{{ pensioner['email'] or '—' }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label"><i class="bi bi-fingerprint"></i> Aadhaar</span>
+          <span class="detail-value" style="font-family:monospace">{{ pensioner['aadhaar'] or '—' }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label"><i class="bi bi-geo-alt-fill"></i> Address</span>
+          <span class="detail-value">{{ pensioner['address'] or '—' }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label"><i class="bi bi-tag-fill"></i> Pension Type</span>
+          <span class="detail-value"><span class="type-badge">{{ pensioner['pension_type'] }}</span></span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label"><i class="bi bi-currency-rupee"></i> Monthly Amount</span>
+          <span class="detail-value text-success fw-bold">₹{{ "{:,.0f}".format(pensioner['monthly_amount'] or 0) }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label"><i class="bi bi-clock"></i> Registered</span>
+          <span class="detail-value">{{ pensioner['created_at'][:10] }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Controls -->
+  <div class="profile-side">
+
+    <!-- Quick Status Update -->
+    <div class="profile-widget">
+      <div class="widget-header"><i class="bi bi-arrow-repeat"></i> Quick Status Update</div>
+      <div class="status-buttons">
+        {% for s in ['Pending Verification','Under Verification','Approved','Disbursed','Rejected'] %}
+        <button class="status-quick-btn {% if pensioner['status']==s %}active-status{% endif %}"
+                onclick="updateStatus({{ pensioner['id'] }}, '{{ s }}')">{{ s }}</button>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Bank Details -->
+    {% if bank %}
+    <div class="profile-widget">
+      <div class="widget-header"><i class="bi bi-bank2"></i> Bank Details</div>
+      <div class="bank-card-display" style="margin:0">
+        <div class="bank-card-chip">{{ bank['bank_name'] or '—' }} &nbsp;·&nbsp; {{ bank['account_type'] }}</div>
+        <div class="bank-card-number">{{ bank['account_number'] or '—' }}</div>
+        <div class="bank-card-bottom">
+          <div>
+            <div class="bank-card-name-label">Branch</div>
+            <div class="bank-card-name-value" style="font-size:12px">{{ bank['branch'] or '—' }}</div>
+          </div>
+          <div>
+            <div class="bank-card-ifsc-label">IFSC</div>
+            <div class="bank-card-ifsc-value">{{ bank['ifsc_code'] or '—' }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Portal Access -->
+    <div class="profile-widget">
+      <div class="widget-header"><i class="bi bi-key-fill"></i> Pensioner Portal Access</div>
+      {% if has_account %}
+      <div class="view-portal-banner">
+        <div class="vpb-text"><i class="bi bi-check-circle-fill text-success"></i> Portal account is active</div>
+        <div class="vpb-form">
+          <button class="btn-outline-gov" style="font-size:12px;padding:6px 12px" onclick="showGrantModal({{ pensioner['id'] }})">
+            <i class="bi bi-arrow-repeat"></i> Reset Password
+          </button>
+        </div>
+      </div>
+      {% else %}
+      <div class="view-portal-banner" style="background:#fff8f0;border-color:#fde68a;">
+        <div class="vpb-text"><i class="bi bi-exclamation-circle text-warning"></i> No portal access yet</div>
+        <div class="vpb-form">
+          <button class="btn-primary-gov" style="font-size:12px;padding:7px 14px" onclick="showGrantModal({{ pensioner['id'] }})">
+            <i class="bi bi-key-fill"></i> Grant Access
+          </button>
+        </div>
+      </div>
+      {% endif %}
+      <div class="text-muted" style="font-size:11px;margin-top:8px;">
+        Login: <code>{{ pensioner['email'] or 'email not set' }}</code>
+      </div>
+    </div>
+
+    <!-- Fraud Alerts -->
+    {% if alerts %}
+    <div class="profile-widget widget-danger">
+      <div class="widget-header"><i class="bi bi-shield-exclamation"></i> Fraud Alerts</div>
+      {% for a in alerts %}
+      <div class="alert-item">
+        <span class="badge-alert">{{ a['alert_type'] }}</span>
+        <p class="alert-desc">{{ a['description'] }}</p>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Recent Notifications -->
+    <div class="profile-widget">
+      <div class="widget-header"><i class="bi bi-bell-fill"></i> Recent Notifications</div>
+      {% if notifs %}
+        {% for n in notifs %}
+        <div class="notif-mini">
+          <div class="notif-mini-title">{{ n['title'] }}</div>
+          <div class="notif-mini-msg">{{ n['message'] }}</div>
+          <div class="notif-mini-date">{{ n['created_at'][:16] }}</div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <p class="text-muted small">No notifications yet.</p>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+<!-- Payment History -->
+<div class="table-card mt-4">
+  <div class="table-card-header">
+    <h3><i class="bi bi-credit-card-fill text-success"></i> Payment History</h3>
+    <span class="text-muted small">{{ payments|length }} record(s)</span>
+  </div>
+  <div class="table-card-body">
+    {% if payments %}
+    <table class="gov-table gov-table-full">
+      <thead>
+        <tr><th>Date</th><th>Month / Year</th><th>Amount</th><th>Method</th><th>Reference</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        {% for pmt in payments %}
+        <tr>
+          <td><span class="date-badge">{{ pmt['payment_date'] }}</span></td>
+          <td>{{ pmt['payment_month'] }} {{ pmt['payment_year'] }}</td>
+          <td><strong class="text-success">₹{{ "{:,.2f}".format(pmt['amount']) }}</strong></td>
+          <td>{{ pmt['method'] }}</td>
+          <td>{% if pmt['reference'] %}<span class="pension-id-badge">{{ pmt['reference'] }}</span>{% else %}—{% endif %}</td>
+          <td class="text-muted small">{{ pmt['notes'] or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><i class="bi bi-inbox"></i><p>No payments recorded yet</p></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

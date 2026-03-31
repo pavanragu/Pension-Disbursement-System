@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}Admin – PensionGov{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet"/>
+</head>
+<body>
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div id="flash-container">
+      {% for cat, msg in messages %}
+      <div class="flash-toast flash-{{ cat }}">
+        <i class="bi bi-{% if cat=='success' %}check-circle{% elif cat=='danger' %}x-circle{% elif cat=='warning' %}exclamation-triangle{% else %}info-circle{% endif %}"></i>
+        {{ msg }}
+      </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon"><i class="bi bi-shield-check"></i></div>
+    <div class="brand-text">
+      <span class="brand-title">PensionGov</span>
+      <span class="brand-sub">Admin Portal</span>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">MAIN MENU</div>
+    <a href="{{ url_for('dashboard') }}" class="nav-item {% if request.endpoint=='dashboard' %}active{% endif %}">
+      <i class="bi bi-speedometer2"></i><span>Dashboard</span></a>
+    <a href="{{ url_for('pensioners') }}" class="nav-item {% if request.endpoint in ['pensioners','add_pensioner','edit_pensioner','view_pensioner'] %}active{% endif %}">
+      <i class="bi bi-people-fill"></i><span>Pensioners</span></a>
+    <a href="{{ url_for('payments') }}" class="nav-item {% if request.endpoint=='payments' %}active{% endif %}">
+      <i class="bi bi-credit-card-fill"></i><span>Payments</span></a>
+    <div class="nav-section-label mt-3">MONITORING</div>
+    <a href="{{ url_for('fraud') }}" class="nav-item {% if request.endpoint=='fraud' %}active{% endif %}">
+      <i class="bi bi-shield-exclamation"></i><span>Fraud Alerts</span></a>
+    <a href="{{ url_for('profile_update_requests') }}" class="nav-item {% if request.endpoint=='profile_update_requests' %}active{% endif %}">
+      <i class="bi bi-person-lines-fill"></i><span>Profile Requests</span>
+      <span class="nav-badge" id="profile-req-badge"></span></a>
+    <a href="{{ url_for('notifications') }}" class="nav-item {% if request.endpoint=='notifications' %}active{% endif %}">
+      <i class="bi bi-bell-fill"></i><span>Notifications</span>
+      <span class="nav-badge" id="notif-badge-sidebar"></span></a>
+    <a href="{{ url_for('reports') }}" class="nav-item {% if request.endpoint=='reports' %}active{% endif %}">
+      <i class="bi bi-bar-chart-fill"></i><span>Reports</span></a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="admin-avatar"><i class="bi bi-person-fill"></i></div>
+    <div class="flex-grow-1">
+      <div class="admin-name">{{ session.username|title }}</div>
+      <div class="admin-role">Administrator</div>
+    </div>
+    <a href="{{ url_for('admin_logout') }}" class="logout-btn" title="Logout">
+      <i class="bi bi-box-arrow-right"></i></a>
+  </div>
+</div>
+
+<div class="main-content" id="main-content">
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="sidebar-toggle" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
+      <div class="page-breadcrumb">
+        <span class="breadcrumb-gov">Government of Tamil Nadu</span>
+        <span class="breadcrumb-sep">/</span>
+        <span class="breadcrumb-current">{% block breadcrumb %}Dashboard{% endblock %}</span>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-date"><i class="bi bi-calendar3"></i><span id="current-date"></span></div>
+      <a href="{{ url_for('notifications') }}" class="notif-btn">
+        <i class="bi bi-bell"></i>
+        <span class="notif-count" id="notif-count" style="display:none">0</span>
+      </a>
+      <a href="{{ url_for('index') }}" class="topbar-portal-link" title="Portal Home">
+        <i class="bi bi-grid-3x3-gap-fill"></i></a>
+      <a href="{{ url_for('admin_logout') }}" class="topbar-logout">
+        <i class="bi bi-box-arrow-right"></i> Logout</a>
+    </div>
+  </div>
+  <div class="page-content">{% block content %}{% endblock %}</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

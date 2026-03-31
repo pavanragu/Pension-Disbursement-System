@@ -1,0 +1,157 @@
+{% extends "pensioner_base.html" %}
+{% block title %}My Dashboard – PensionGov{% endblock %}
+{% block breadcrumb %}Dashboard{% endblock %}
+{% block content %}
+
+<!-- Status Hero Banner -->
+<div class="status-hero-card">
+  <div class="status-hero-icon">
+    <i class="bi bi-person-fill"></i>
+  </div>
+  <div class="status-hero-body">
+    <div class="status-hero-greeting">Welcome back,</div>
+    <div class="status-hero-name">{{ p['name'] }}</div>
+    <span class="status-hero-badge">
+      <i class="bi bi-{% if p['status']=='Approved' %}check-circle-fill{% elif p['status']=='Disbursed' %}wallet-fill{% elif p['status']=='Rejected' %}x-circle-fill{% else %}hourglass-split{% endif %}"></i>
+      {{ p['status'] }}
+    </span>
+    {% if p['pension_id'] %}
+    <div class="status-hero-pension-id">
+      <i class="bi bi-tag-fill"></i> {{ p['pension_id'] }} &nbsp;·&nbsp; {{ p['pension_type'] }}
+    </div>
+    {% endif %}
+    <a href="{{ url_for('pensioner_edit_profile') }}" class="edit-profile-btn-hero">
+      <i class="bi bi-pencil-square"></i> Edit Profile
+    </a>
+  </div>
+  <div class="status-hero-amount">
+    <div class="status-hero-amount-val">₹{{ "{:,.0f}".format(p['monthly_amount'] or 0) }}</div>
+    <div class="status-hero-amount-label">Monthly Pension Amount</div>
+  </div>
+</div>
+
+<!-- KPI Row -->
+<div class="pensioner-kpi-row">
+  <div class="p-kpi-card c-green">
+    <div class="p-kpi-icon"><i class="bi bi-currency-rupee"></i></div>
+    <div>
+      <div class="p-kpi-value">₹{{ "{:,.0f}".format(total_recd) }}</div>
+      <div class="p-kpi-label">Total Received</div>
+    </div>
+  </div>
+  <div class="p-kpi-card c-blue">
+    <div class="p-kpi-icon"><i class="bi bi-receipt"></i></div>
+    <div>
+      <div class="p-kpi-value">{{ pmt_count }}</div>
+      <div class="p-kpi-label">Total Payments</div>
+    </div>
+  </div>
+  <div class="p-kpi-card c-amber">
+    <div class="p-kpi-icon"><i class="bi bi-bell-fill"></i></div>
+    <div>
+      <div class="p-kpi-value">{{ unread }}</div>
+      <div class="p-kpi-label">Unread Notifications</div>
+    </div>
+  </div>
+</div>
+
+<!-- Main Grid -->
+<div class="pensioner-grid">
+
+  <!-- Recent Payments -->
+  <div class="p-info-card">
+    <div class="p-info-header">
+      <span><i class="bi bi-wallet2 text-success"></i> Recent Payments</span>
+      <a href="{{ url_for('pensioner_payments') }}" class="view-all">View All <i class="bi bi-arrow-right"></i></a>
+    </div>
+    <div class="p-info-body">
+      {% if next_payment %}
+      <div class="next-payment-card">
+        <i class="bi bi-calendar-check-fill"></i>
+        <div>
+          <div class="next-payment-label">NEXT EXPECTED PAYMENT</div>
+          <div class="next-payment-date">{{ next_payment }}</div>
+        </div>
+      </div>
+      {% elif p['status'] in ('Pending Verification','Under Verification') %}
+      <div class="pending-notice">
+        <i class="bi bi-hourglass-split"></i>
+        <div>Your application is under review. Payments will begin once approved.</div>
+      </div>
+      {% endif %}
+
+      {% if recent_pmts %}
+        {% for pmt in recent_pmts %}
+        <div class="payment-item">
+          <div>
+            <div class="payment-month-label">{{ pmt['payment_month'] }} {{ pmt['payment_year'] }}</div>
+            <div class="payment-date-sub">{{ pmt['payment_date'] }} · {{ pmt['method'] }}</div>
+          </div>
+          <div class="payment-amount-pill">₹{{ "{:,.0f}".format(pmt['amount']) }}</div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state">
+          <i class="bi bi-inbox"></i>
+          <p>No payments yet</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Notifications + Bank Info -->
+  <div style="display:flex;flex-direction:column;gap:16px;">
+
+    <!-- Notifications -->
+    <div class="p-info-card">
+      <div class="p-info-header">
+        <span><i class="bi bi-bell-fill text-warning"></i> Recent Notifications</span>
+        <a href="{{ url_for('pensioner_notifications') }}" class="view-all">View All <i class="bi bi-arrow-right"></i></a>
+      </div>
+      <div class="p-info-body">
+        {% if recent_notifs %}
+          {% for n in recent_notifs %}
+          <div class="notif-mini-item">
+            <div class="notif-mini-dot {% if not n['is_read'] %}notif-mini-dot-active{% endif %}"></div>
+            <div>
+              <div class="notif-mini-text"><strong>{{ n['title'] }}</strong><br>{{ n['message'][:80] }}{% if n['message']|length > 80 %}…{% endif %}</div>
+              <div class="notif-mini-time"><i class="bi bi-clock"></i> {{ n['created_at'][:16] }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty-state"><i class="bi bi-bell-slash"></i><p>No notifications</p></div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Bank Info Summary -->
+    {% if bank %}
+    <div class="p-info-card">
+      <div class="p-info-header">
+        <span><i class="bi bi-bank2 text-primary"></i> Linked Bank Account</span>
+      </div>
+      <div class="p-info-body">
+        <div class="bank-card-display">
+          <div class="bank-card-chip">{{ bank['bank_name'] or 'Bank Account' }}</div>
+          <div class="bank-card-number">
+            ···· ···· {{ bank['account_number'][-4:] if bank['account_number'] and bank['account_number']|length >= 4 else '····' }}
+          </div>
+          <div class="bank-card-bottom">
+            <div>
+              <div class="bank-card-name-label">Account Holder</div>
+              <div class="bank-card-name-value">{{ p['name'] }}</div>
+            </div>
+            <div>
+              <div class="bank-card-ifsc-label">IFSC</div>
+              <div class="bank-card-ifsc-value">{{ bank['ifsc_code'] or '—' }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

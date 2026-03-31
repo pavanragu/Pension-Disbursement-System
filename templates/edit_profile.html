@@ -1,0 +1,256 @@
+{% extends "pensioner_base.html" %}
+{% block title %}Edit Profile – PensionGov{% endblock %}
+{% block breadcrumb %}Edit Profile{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h2 class="page-title">Edit Profile</h2>
+    <p class="page-subtitle">Request changes to your contact and bank details — subject to admin review</p>
+  </div>
+  <a href="{{ url_for('pensioner_profile') }}" class="btn-outline-gov">
+    <i class="bi bi-arrow-left"></i> Back to Profile
+  </a>
+</div>
+
+<!-- Info banner -->
+<div class="edit-profile-notice">
+  <i class="bi bi-info-circle-fill"></i>
+  <div>
+    <strong>How profile updates work:</strong>
+    Your changes will be sent to the admin for review.
+    Once approved, your profile will be updated and you'll receive a notification.
+    Fields marked <span class="readonly-tag">Read-Only</span> cannot be changed here.
+  </div>
+</div>
+
+<div class="edit-profile-layout">
+
+  <!-- LEFT: Edit Form -->
+  <div class="ep-form-col">
+    <form method="POST">
+
+      <!-- Contact Details -->
+      <div class="form-section">
+        <div class="form-section-header">
+          <i class="bi bi-telephone-fill"></i> Contact Details
+        </div>
+        <div class="form-grid" style="padding:20px 24px;">
+
+          <!-- Read-only: Name -->
+          <div class="form-group">
+            <label class="form-label">Full Name <span class="readonly-tag">Read-Only</span></label>
+            <input type="text" class="gov-input ep-readonly" value="{{ p['name'] }}" disabled/>
+          </div>
+
+          <!-- Read-only: DOB -->
+          <div class="form-group">
+            <label class="form-label">Date of Birth <span class="readonly-tag">Read-Only</span></label>
+            <input type="text" class="gov-input ep-readonly" value="{{ p['dob'] or '—' }}" disabled/>
+          </div>
+
+          <!-- Editable: Phone -->
+          <div class="form-group">
+            <label class="form-label">Phone Number
+              <span class="editable-tag">Editable</span>
+            </label>
+            <input type="tel" name="phone" class="gov-input" maxlength="10"
+                   value="{{ p['phone'] or '' }}" placeholder="10-digit mobile number"/>
+            <div class="field-current">Current: <strong>{{ p['phone'] or 'Not set' }}</strong></div>
+          </div>
+
+          <!-- Editable: Email -->
+          <div class="form-group">
+            <label class="form-label">Email Address
+              <span class="editable-tag">Editable</span>
+            </label>
+            <input type="email" name="email" class="gov-input"
+                   value="{{ p['email'] or '' }}" placeholder="your@email.com"/>
+            <div class="field-current">Current: <strong>{{ p['email'] or 'Not set' }}</strong></div>
+          </div>
+
+          <!-- Read-only: Aadhaar -->
+          <div class="form-group">
+            <label class="form-label">Aadhaar Number <span class="readonly-tag">Read-Only</span></label>
+            <input type="text" class="gov-input ep-readonly"
+                   value="{% if p['aadhaar'] %}XXXX XXXX {{ p['aadhaar'][-4:] }}{% else %}—{% endif %}" disabled/>
+          </div>
+
+          <!-- Read-only: Pension ID -->
+          <div class="form-group">
+            <label class="form-label">Pension ID <span class="readonly-tag">Read-Only</span></label>
+            <input type="text" class="gov-input ep-readonly"
+                   value="{{ p['pension_id'] or 'Pending Assignment' }}" disabled/>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Bank Details -->
+      <div class="form-section">
+        <div class="form-section-header">
+          <i class="bi bi-bank2"></i> Bank Account Details
+        </div>
+        <div class="form-grid" style="padding:20px 24px;">
+
+          <!-- Editable: Bank Name -->
+          <div class="form-group">
+            <label class="form-label">Bank Name
+              <span class="editable-tag">Editable</span>
+            </label>
+            <select name="bank_name" class="gov-input gov-select">
+              <option value="">— Select Bank —</option>
+              {% for b in ['State Bank of India','Indian Overseas Bank','Canara Bank','Bank of Baroda',
+                'Indian Bank','Union Bank of India','Bank of India','Punjab National Bank',
+                'HDFC Bank','ICICI Bank','Axis Bank','Other'] %}
+              <option value="{{ b }}"
+                {% if bank and bank['bank_name']==b %}selected{% endif %}>{{ b }}</option>
+              {% endfor %}
+            </select>
+            <div class="field-current">Current: <strong>{{ bank['bank_name'] if bank and bank['bank_name'] else 'Not set' }}</strong></div>
+          </div>
+
+          <!-- Editable: Account Number -->
+          <div class="form-group">
+            <label class="form-label">Account Number
+              <span class="editable-tag">Editable</span>
+            </label>
+            <input type="text" name="account_number" class="gov-input"
+                   value="{{ bank['account_number'] if bank else '' }}"
+                   placeholder="Bank account number"/>
+            <div class="field-current">Current:
+              <strong>
+                {% if bank and bank['account_number'] %}
+                  ···· {{ bank['account_number'][-4:] }}
+                {% else %}Not set{% endif %}
+              </strong>
+            </div>
+          </div>
+
+          <!-- Editable: IFSC -->
+          <div class="form-group">
+            <label class="form-label">IFSC Code
+              <span class="editable-tag">Editable</span>
+            </label>
+            <input type="text" name="ifsc_code" class="gov-input" maxlength="11"
+                   value="{{ bank['ifsc_code'] if bank else '' }}"
+                   placeholder="e.g. SBIN0001234"
+                   style="text-transform:uppercase"
+                   oninput="this.value=this.value.toUpperCase()"/>
+            <div class="field-current">Current: <strong>{{ bank['ifsc_code'] if bank and bank['ifsc_code'] else 'Not set' }}</strong></div>
+          </div>
+
+          <!-- Editable: Branch -->
+          <div class="form-group">
+            <label class="form-label">Branch Name
+              <span class="editable-tag">Editable</span>
+            </label>
+            <input type="text" name="branch" class="gov-input"
+                   value="{{ bank['branch'] if bank else '' }}"
+                   placeholder="Branch name and city"/>
+            <div class="field-current">Current: <strong>{{ bank['branch'] if bank and bank['branch'] else 'Not set' }}</strong></div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Password Change -->
+      <div class="form-section">
+        <div class="form-section-header">
+          <i class="bi bi-key-fill"></i> Change Password
+          <span style="font-size:11px;font-weight:400;color:var(--text-muted);margin-left:8px;">Leave blank to keep current password</span>
+        </div>
+        <div class="form-grid" style="padding:20px 24px;">
+          <div class="form-group">
+            <label class="form-label">New Password <span class="editable-tag">Editable</span></label>
+            <div class="field-input-wrap">
+              <i class="bi bi-lock-fill field-icon"></i>
+              <input type="password" name="new_password" id="ep-pw1" class="gov-input"
+                     minlength="6" placeholder="Min. 6 characters" style="padding-left:36px"/>
+              <button type="button" class="pw-toggle" onclick="togglePw('ep-pw1','ep-eye1')">
+                <i class="bi bi-eye" id="ep-eye1"></i>
+              </button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Confirm New Password</label>
+            <div class="field-input-wrap">
+              <i class="bi bi-lock-fill field-icon"></i>
+              <input type="password" name="confirm_password" id="ep-pw2" class="gov-input"
+                     placeholder="Re-enter new password" style="padding-left:36px"/>
+              <button type="button" class="pw-toggle" onclick="togglePw('ep-pw2','ep-eye2')">
+                <i class="bi bi-eye" id="ep-eye2"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <a href="{{ url_for('pensioner_profile') }}" class="btn-outline-gov">Cancel</a>
+        <button type="submit" class="btn-primary-gov">
+          <i class="bi bi-send-fill"></i> Submit for Admin Review
+        </button>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- RIGHT: Request History -->
+  <div class="ep-history-col">
+    <div class="ep-history-card">
+      <div class="ep-history-header">
+        <i class="bi bi-clock-history"></i> My Update Requests
+        <span class="ep-history-count">{{ pending|length }}</span>
+      </div>
+
+      {% if pending %}
+        {% for req in pending %}
+        <div class="ep-req-item ep-req-{{ req['status']|lower|replace(' ','') }}">
+          <div class="ep-req-top">
+            <span class="ep-req-field">{{ req['field_name'].replace('_',' ').title() }}</span>
+            <span class="ep-req-status ep-status-{{ req['status']|lower|replace(' ','') }}">
+              {% if req['status'] == 'Pending Review' %}
+                <i class="bi bi-hourglass-split"></i>
+              {% elif req['status'] == 'Approved' %}
+                <i class="bi bi-check-circle-fill"></i>
+              {% else %}
+                <i class="bi bi-x-circle-fill"></i>
+              {% endif %}
+              {{ req['status'] }}
+            </span>
+          </div>
+          <div class="ep-req-values">
+            <div class="ep-req-old">
+              <span class="ep-val-label">Was:</span>
+              <span class="ep-val-text">
+                {% if req['field_name'] == 'password' %}[password]
+                {% elif req['old_value'] %}{{ req['old_value'] }}
+                {% else %}—{% endif %}
+              </span>
+            </div>
+            <i class="bi bi-arrow-right ep-req-arrow"></i>
+            <div class="ep-req-new">
+              <span class="ep-val-label">Requested:</span>
+              <span class="ep-val-text">
+                {% if req['field_name'] == 'password' %}[new password]
+                {% else %}{{ req['new_value'] }}{% endif %}
+              </span>
+            </div>
+          </div>
+          <div class="ep-req-date">
+            <i class="bi bi-calendar3"></i> {{ req['created_at'][:16] }}
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state" style="padding:24px;">
+          <i class="bi bi-inbox"></i>
+          <p>No update requests yet</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

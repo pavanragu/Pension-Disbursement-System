@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Payments – PensionGov Admin{% endblock %}
+{% block breadcrumb %}Payments{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-title">Payment Management</h2>
+    <p class="page-subtitle">Record and track all pension disbursements</p>
+  </div>
+  <button class="btn-primary-gov" data-bs-toggle="modal" data-bs-target="#addPaymentModal">
+    <i class="bi bi-plus-circle-fill"></i> Record Payment
+  </button>
+</div>
+
+<!-- Total Banner -->
+<div class="total-banner">
+  <div class="total-banner-icon"><i class="bi bi-currency-rupee"></i></div>
+  <div>
+    <div class="total-banner-value">₹{{ "{:,.2f}".format(total) }}</div>
+    <div class="total-banner-label">Total Disbursed (All Time)</div>
+  </div>
+</div>
+
+<!-- Table -->
+<div class="table-container">
+  <table class="gov-table gov-table-full">
+    <thead>
+      <tr>
+        <th>#</th><th>Pensioner</th><th>Pension ID</th><th>Amount</th>
+        <th>Month / Year</th><th>Payment Date</th><th>Method</th><th>Reference</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in payments %}
+      <tr>
+        <td class="text-muted small">{{ loop.index }}</td>
+        <td><div class="td-name">{{ p['name'] }}</div></td>
+        <td><span class="pension-id-badge">{{ p['pension_id'] }}</span></td>
+        <td><strong class="text-success">₹{{ "{:,.2f}".format(p['amount']) }}</strong></td>
+        <td>{{ p['payment_month'] }} {{ p['payment_year'] }}</td>
+        <td><span class="date-badge">{{ p['payment_date'] }}</span></td>
+        <td>{{ p['method'] }}</td>
+        <td>{% if p['reference'] %}<span class="pension-id-badge">{{ p['reference'] }}</span>{% else %}—{% endif %}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="text-center py-5">
+        <div class="empty-state"><i class="bi bi-credit-card"></i><p>No payments recorded yet</p></div>
+      </td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Add Payment Modal -->
+<div class="modal fade" id="addPaymentModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content gov-modal">
+      <div class="modal-header gov-modal-header">
+        <h5 class="modal-title"><i class="bi bi-plus-circle"></i> Record New Payment</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{{ url_for('add_payment') }}">
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group form-group-full">
+              <label class="form-label">Select Pensioner <span class="required">*</span></label>
+              <select name="pensioner_id" class="gov-input gov-select" required>
+                <option value="">— Select Approved / Disbursed Pensioner —</option>
+                {% for p in pensioners %}
+                <option value="{{ p['id'] }}">{{ p['name'] }} ({{ p['pension_id'] }}) – ₹{{ "{:,.0f}".format(p['monthly_amount']) }}/mo</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Amount (₹) <span class="required">*</span></label>
+              <input type="number" name="amount" class="gov-input" required step="0.01" min="1" placeholder="0.00"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Payment Date</label>
+              <input type="date" name="payment_date" class="gov-input"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Month</label>
+              <select name="payment_month" class="gov-input gov-select">
+                {% for m in ['January','February','March','April','May','June','July','August','September','October','November','December'] %}
+                <option>{{ m }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Year</label>
+              <input type="number" name="payment_year" class="gov-input" value="{{ now_year }}" min="2000" max="2099"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Method</label>
+              <select name="method" class="gov-input gov-select">
+                <option>Bank Transfer</option><option>NEFT</option>
+                <option>RTGS</option><option>Cheque</option><option>Cash</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Reference No.</label>
+              <input type="text" name="reference" class="gov-input" placeholder="TXN / REF number"/>
+            </div>
+            <div class="form-group form-group-full">
+              <label class="form-label">Notes</label>
+              <textarea name="notes" class="gov-input gov-textarea" rows="2" placeholder="Optional notes"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer gov-modal-footer">
+          <button type="button" class="btn-outline-gov" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn-primary-gov">
+            <i class="bi bi-check-circle-fill"></i> Record Payment
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

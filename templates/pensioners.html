@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Pensioners – PensionGov Admin{% endblock %}
+{% block breadcrumb %}Pensioners{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-title">Pensioner Management</h2>
+    <p class="page-subtitle">Search, manage, and track all registered pensioners</p>
+  </div>
+  <a href="{{ url_for('add_pensioner') }}" class="btn-primary-gov">
+    <i class="bi bi-person-plus-fill"></i> Add Pensioner</a>
+</div>
+
+<!-- Filter Bar -->
+<div class="filter-bar">
+  <form method="GET" class="filter-form">
+    <div class="search-wrap">
+      <i class="bi bi-search search-icon"></i>
+      <input type="text" name="search" class="search-input"
+             placeholder="Search name, pension ID, phone, email, Aadhaar…"
+             value="{{ search }}"/>
+    </div>
+    <select name="status" class="filter-select">
+      <option value="">All Statuses</option>
+      {% for s in ['Pending Verification','Under Verification','Approved','Disbursed','Rejected'] %}
+      <option value="{{ s }}" {% if status_filter==s %}selected{% endif %}>{{ s }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn-search">Search</button>
+    {% if search or status_filter %}
+    <a href="{{ url_for('pensioners') }}" class="btn-clear">Clear</a>
+    {% endif %}
+  </form>
+  <div class="result-count">{{ pensioners|length }} record(s)</div>
+</div>
+
+<!-- Table -->
+<div class="table-container">
+  <table class="gov-table gov-table-full">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Pension ID</th>
+        <th>Name</th>
+        <th>Age</th>
+        <th>Phone</th>
+        <th>Type</th>
+        <th>Bank</th>
+        <th>Monthly (₹)</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in pensioners %}
+      <tr>
+        <td class="text-muted small">{{ loop.index }}</td>
+        <td>
+          {% if p['pension_id'] %}
+          <span class="pension-id-badge">{{ p['pension_id'] }}</span>
+          {% else %}
+          <span class="text-muted small">Pending</span>
+          {% endif %}
+        </td>
+        <td>
+          <div class="td-name">{{ p['name'] }}</div>
+          <div class="td-sub">{{ p['email'] or '—' }}</div>
+        </td>
+        <td>
+          {{ p['age'] or '—' }}
+          {% if p['age'] and p['age'] > 120 %}
+          <i class="bi bi-exclamation-triangle-fill text-danger ms-1" title="Suspicious age"></i>
+          {% endif %}
+        </td>
+        <td>{{ p['phone'] or '—' }}</td>
+        <td><span class="type-badge">{{ p['pension_type'] }}</span></td>
+        <td><div class="td-sub">{{ p['bank_name'] or '—' }}</div></td>
+        <td><strong>{{ "{:,.0f}".format(p['monthly_amount'] or 0) }}</strong></td>
+        <td>
+          <span class="status-badge status-{{ p['status']|lower|replace(' ','') }}">
+            {{ p['status'] }}
+          </span>
+        </td>
+        <td>
+          <div class="action-btns">
+            <a href="{{ url_for('view_pensioner', pid=p['id']) }}"
+               class="action-btn action-view" title="View"><i class="bi bi-eye-fill"></i></a>
+            <a href="{{ url_for('edit_pensioner', pid=p['id']) }}"
+               class="action-btn action-edit" title="Edit"><i class="bi bi-pencil-fill"></i></a>
+            <form method="POST" action="{{ url_for('delete_pensioner', pid=p['id']) }}"
+                  onsubmit="return confirmDelete('{{ p['name'] }}')">
+              <button type="submit" class="action-btn action-delete" title="Delete">
+                <i class="bi bi-trash-fill"></i></button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="10" class="text-center py-5">
+          <div class="empty-state">
+            <i class="bi bi-people"></i>
+            <p>No pensioners found{% if search %} for "{{ search }}"{% endif %}</p>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
