@@ -14,10 +14,10 @@ app.secret_key = os.environ.get('SECRET_KEY', 'pension_gov_tn_secret_xK9mP')
 #  or falls back to local values for development
 # ══════════════════════════════════════════════════════════════
 DB_CONFIG = {
-    'host':     os.environ.get('DB_HOST',     'localhost'),
-    'user':     os.environ.get('DB_USER',     'pension_admin'),
-    'password': os.environ.get('DB_PASSWORD', 'Admin@2026'),
-    'database': os.environ.get('DB_NAME',     'pension_system'),
+    'host':     os.environ.get('DB_HOST'),
+    'user':     os.environ.get('DB_USER'),
+    'password': os.environ.get('DB_PASSWORD'),
+    'database': os.environ.get('DB_NAME'),
     'charset':  'utf8mb4'
 }
 
