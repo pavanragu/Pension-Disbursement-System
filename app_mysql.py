@@ -7,32 +7,30 @@ from functools import wraps
 import threading
 
 app = Flask(__name__)
-app.secret_key = 'pension_gov_tn_secret_xK9mP'
+app.secret_key = os.environ.get('SECRET_KEY', 'pension_gov_tn_secret_xK9mP')
 
 # ══════════════════════════════════════════════════════════════
-#  MYSQL CONFIG
+#  MYSQL CONFIG — reads from environment variables on server
+#  or falls back to local values for development
 # ══════════════════════════════════════════════════════════════
 DB_CONFIG = {
-    'host':     'localhost',
-    'user':     'pension_admin',
-    'password': 'Admin@2026',   # ← your MySQL password
-    'database': 'pension_system',
+    'host':     os.environ.get('DB_HOST',     'localhost'),
+    'user':     os.environ.get('DB_USER',     'pension_admin'),
+    'password': os.environ.get('DB_PASSWORD', 'Admin@2026'),
+    'database': os.environ.get('DB_NAME',     'pension_system'),
     'charset':  'utf8mb4'
 }
 
 # ══════════════════════════════════════════════════════════════
 #  EMAIL CONFIG — Gmail SMTP
-#  Step 1: Enable 2-Step Verification on Gmail
-#  Step 2: Go to myaccount.google.com/apppasswords
-#  Step 3: Generate App Password (16 chars) — paste below
 # ══════════════════════════════════════════════════════════════
-MAIL_SENDER_EMAIL = 'rvpavan06@gmail.com'   # ← your Gmail address
+MAIL_SENDER_EMAIL = os.environ.get('MAIL_EMAIL', 'rvpavan06@gmail.com')
 
 app.config['MAIL_SERVER']         = 'smtp.gmail.com'
 app.config['MAIL_PORT']           = 587
 app.config['MAIL_USE_TLS']        = True
 app.config['MAIL_USERNAME']       = MAIL_SENDER_EMAIL
-app.config['MAIL_PASSWORD']       = 'trgjsdffoimzwaih'   # ← Gmail App Password (no spaces)
+app.config['MAIL_PASSWORD']       = os.environ.get('MAIL_PASSWORD', 'trgjsdffoimzwaih')
 app.config['MAIL_DEFAULT_SENDER'] = ('PensionGov Tamil Nadu', MAIL_SENDER_EMAIL)
 mail = Mail(app)
 
@@ -1242,4 +1240,4 @@ def api_status_update(pid):
 
 if __name__ == '__main__':
     init_db()
-    app.run(debug=True, port=5000)
+    app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
