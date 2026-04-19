@@ -45,4 +45,13 @@
       </div>
     </div>
   </div>
-  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>fun
+  <script>
+    function togglePw(id, eyeId) {
+      const p = document.getElementById(id);
+      const e = document.getElementById(eyeId);
+      p.type = p.type === 'password' ? 'text' : 'password';
+      e.className = p.type === 'password' ? 'bi bi-eye' : 'bi bi-eye-slash';
+    }
+  </script>
+</body>
+</html>
