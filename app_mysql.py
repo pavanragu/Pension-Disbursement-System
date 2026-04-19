@@ -5,6 +5,7 @@ import mysql.connector, os, json, random
 from datetime import datetime, date, timedelta
 from functools import wraps
 import threading
+from apscheduler.schedulers.background import BackgroundScheduler
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'pension_gov_tn_secret_xK9mP')
@@ -762,7 +763,10 @@ def add_payment():
     cur.execute('''INSERT INTO payments
         (pensioner_id,amount,payment_date,payment_month,payment_year,method,reference,notes)
         VALUES (%s,%s,%s,%s,%s,%s,%s,%s)''', (pid,amount,pdate,month,year,meth,ref,notes))
-    cur.execute("UPDATE pensioners SET status='Disbursed' WHERE id=%s", (pid,))
+    # Update status to Disbursed AND update monthly_amount with the payment amount
+    cur.execute('''UPDATE pensioners 
+        SET status='Disbursed', monthly_amount=%s 
+        WHERE id=%s''', (amount, pid))
     cur.execute("SELECT * FROM pensioners WHERE id=%s", (pid,))
     p = qone(cur)
     conn.commit(); conn.close()
@@ -1238,6 +1242,134 @@ def api_status_update(pid):
     conn.commit(); conn.close()
     add_notification('pensioner', f'Status: {new_s}', STATUS_MSG.get(new_s, f'Status: {new_s}.'), pid)
     return jsonify({'success': True})
+
+# ══════════════════════════════════════════════════════════════
+#  AUTO MONTHLY DISBURSEMENT SCHEDULER
+#  Runs every month on the same day the first payment was made
+#  For each Approved/Disbursed pensioner:
+#    1. Creates a payment record automatically
+#    2. Updates monthly_amount and status
+#    3. Sends portal notification to pensioner
+#    4. Sends email notification to pensioner
+#    5. Sends admin notification
+# ══════════════════════════════════════════════════════════════
+def auto_monthly_disburse():
+    """
+    Runs automatically every month on the 10th at 9:00 AM.
+    Creates payment records for all Approved/Disbursed pensioners
+    and sends notifications — exactly like admin recording manually.
+    """
+    with app.app_context():
+        print(f"[AUTO DISBURSE] Running at {datetime.now()}")
+        try:
+            conn = get_db()
+            cur  = conn.cursor(dictionary=True)
+
+            # Get all approved and disbursed pensioners with monthly_amount > 0
+            cur.execute('''
+                SELECT * FROM pensioners
+                WHERE status IN ('Approved', 'Disbursed')
+                AND monthly_amount > 0
+            ''')
+            pensioners = cur.fetchall()
+
+            if not pensioners:
+                print("[AUTO DISBURSE] No eligible pensioners found.")
+                conn.close()
+                return
+
+            today        = date.today()
+            month_name   = today.strftime('%B')   # e.g. "April"
+            current_year = today.year
+            ref_prefix   = f"AUTO-{today.strftime('%Y%m')}"
+
+            count = 0
+            for p in pensioners:
+                pid    = p['id']
+                amount = float(p['monthly_amount'])
+                ref    = f"{ref_prefix}-{pid:03d}"
+
+                # Check if payment already made this month for this pensioner
+                cur.execute('''
+                    SELECT id FROM payments
+                    WHERE pensioner_id = %s
+                    AND payment_month  = %s
+                    AND payment_year   = %s
+                ''', (pid, month_name, current_year))
+
+                if cur.fetchone():
+                    print(f"[AUTO DISBURSE] Skipping {p['name']} — already paid for {month_name} {current_year}")
+                    continue
+
+                # Insert payment record
+                cur.execute('''
+                    INSERT INTO payments
+                    (pensioner_id, amount, payment_date, payment_month,
+                     payment_year, method, reference, notes)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                ''', (
+                    pid, amount, str(today), month_name,
+                    current_year, 'Bank Transfer', ref,
+                    'Auto-disbursed monthly pension'
+                ))
+
+                # Update status and monthly_amount
+                cur.execute('''
+                    UPDATE pensioners
+                    SET status = 'Disbursed', monthly_amount = %s
+                    WHERE id = %s
+                ''', (amount, pid))
+
+                conn.commit()
+                count += 1
+
+                # Send portal + email notification to pensioner
+                add_notification(
+                    'pensioner',
+                    'Monthly Pension Credited',
+                    f"Dear {p['name']}, your monthly pension of "
+                    f"Rs.{amount:,.0f} for {month_name} {current_year} "
+                    f"has been credited to your registered bank account. "
+                    f"Reference: {ref}.",
+                    pid
+                )
+
+                print(f"[AUTO DISBURSE] ✅ Paid {p['name']} Rs.{amount:,.0f} for {month_name} {current_year}")
+
+            # Notify admin about the auto-disbursement
+            if count > 0:
+                add_notification(
+                    'admin',
+                    'Auto Monthly Disbursement Complete',
+                    f"Auto-disbursement for {month_name} {current_year} completed. "
+                    f"{count} pensioner(s) credited successfully."
+                )
+                print(f"[AUTO DISBURSE] ✅ Done — {count} pensioners paid for {month_name} {current_year}")
+            else:
+                print(f"[AUTO DISBURSE] No new payments needed for {month_name} {current_year}")
+
+            conn.close()
+
+        except Exception as e:
+            print(f"[AUTO DISBURSE ERROR] {e}")
+
+# ── Start the scheduler ───────────────────────────────────────
+scheduler = BackgroundScheduler(timezone='Asia/Kolkata')
+
+# Runs every month on the 10th at 9:00 AM IST
+# Change day=10 to any day you want (1-28)
+scheduler.add_job(
+    func     = auto_monthly_disburse,
+    trigger  = 'cron',
+    day      = 10,       # ← runs on 10th of every month
+    hour     = 9,        # ← at 9:00 AM
+    minute   = 0,
+    id       = 'monthly_disburse',
+    replace_existing = True
+)
+
+scheduler.start()
+print("[SCHEDULER] Auto monthly disbursement scheduled for 10th of every month at 9:00 AM IST")
 
 if __name__ == '__main__':
     init_db()
